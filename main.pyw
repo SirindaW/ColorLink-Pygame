@@ -3,6 +3,7 @@ from random import randint
 from itertools import permutations
 import time
 import os, psutil
+import tracemalloc
 
 class node :
     def __init__(self,attr,first='',parent='',visited = False,prev=[-1,-1]):
@@ -302,26 +303,25 @@ def gen_new_map():
 
 
     #allmap
-    allMap = [[[3,7],[6,7],[3,0],[0,6],[5,0],[7,6],[2,0],[5,5]], [[2,7],[5,7],[3,0],[0,6],[5,0],[7,6],[2,0],[5,5]]] 
-    Target = []
-    Map = []
+    allMap = [[[7,3],[7,6] , [0,3],[6,0] , [0,5],[6,7] , [0,2],[5,5]], [[0,1],[5,2] , [4,3],[6,2] , [5,3],[6,4]  , [0,8],[9,3]], 
+              [[0,9],[5,0] , [1,3],[7,2] , [3,3],[4,7] , [4,8],[8,7]], [[8,2],[9,4] , [4,0],[6,7] , [2,7],[8,5] , [2,2],[4,6]],
+              [[9,1],[2,8] , [1,2],[7,5] , [2,2],[8,4] , [1,6],[7,4]], [[0,6],[9,9] , [0,7],[7,8] , [0,9],[8,8] , [7,4],[5,7]], 
+              [[2,0],[7,9] , [3,0],[1,6] , [7,1],[1,5] , [2,1],[7,2]], [[3,0],[1,6] , [1,5],[7,1] , [0,8],[5,8] , [2,1],[7,3]],
+              [[2,7],[6,8] , [8,0],[7,9] , [0,9],[5,4] , [3,4],[5,5]], [[0,2],[6,1] , [7,0],[1,6] , [8,1],[6,6] , [3,6],[2,3]],
+              [[5,1],[6,8] , [1,6],[9,6] , [3,2],[6,7] , [8,1],[5,4]], [[0,0],[4,5] , [1,0],[2,7] , [3,2],[2,9] , [5,4],[7,7]],
+              [[0,0],[4,0] , [5,1],[1,9] , [8,0],[3,8] , [6,1],[3,5]], [[5,1],[6,8] , [1,6],[9,6] , [3,2],[6,7] , [8,1],[5,4]],
+              [[0,2],[6,1] , [7,0],[1,6] , [8,1],[6,4] , [2,3],[6,3]], [[6,8],[3,7] , [8,0],[7,9] , [0,9],[5,4] , [3,4],[5,5]],
+              [[5,4],[0,9] , [7,9],[8,0] , [6,1],[3,5] , [3,3],[6,4]], [[2,0],[7,9] , [3,0],[1,5] , [0,9],[6,8] , [2,1],[7,2]]] 
+    
     line_pattern = "|\+!%^"
-    search_count = 0
-    mapSize = 10
     targetNo = 4
-    maximumRetry = 0
-    line_path = []
-
-    for i in range(10): #set first map
-        temp = []
-        for j in range(10):
-            temp.append(node("-"))
-        Map.append(temp)
-        
+    mapSize = 10
+    Target = []
+    Map = [[node('-') for _ in range(mapSize)] for _ in range(mapSize)]
     mapChoose = randint(0, len(allMap)-1)
     print(mapChoose)
-    x = list(allMap[mapChoose][i][0] for i in range(len(allMap[mapChoose]))) # position of point in x-axis (point x[0] is paired of poit x[1])
-    y = list(allMap[mapChoose][i][1] for i in range(len(allMap[mapChoose]))) # position of point in y-axis (point y[0] is paired of poit y[1])
+    x = list(allMap[mapChoose][i][1] for i in range(len(allMap[mapChoose]))) # position of point in x-axis (point x[0] is paired of poit x[1])
+    y = list(allMap[mapChoose][i][0] for i in range(len(allMap[mapChoose]))) # position of point in y-axis (point y[0] is paired of poit y[1])
 
     pair_count = len(x)//2
     point_count = len(x)
@@ -347,8 +347,7 @@ def gen_new_map():
 
     #----------------------------------------------------------------------------two way BFS------------------------------------------------------------------------------------------------
 
-    start_time = int(round(time.time()*1000))
-    start_mem = process_memory()
+    maximumRetry = 0
     permBi = perm[0:]
     for i in range(0,len(permBi)):
         permBi[i]=list(permBi[i])
@@ -365,6 +364,8 @@ def gen_new_map():
     show_Map(Map)
     current_try = 0
     line_path = []
+    start_time = int(round(time.time()*1000))
+    tracemalloc.start()
     while(not bidirect_bfs(Map,0,current_try,line_path,permBi) and current_try!=maximumRetry):
         current_try+=1
         line_path=[]
@@ -372,7 +373,8 @@ def gen_new_map():
         #print("Not Possible Retrying Try #{0}".format(current_try+1))
     print('######################')
     end_time = int(round(time.time()*1000))
-    end_mem = process_memory()
+    memBiBFS  = list(tracemalloc .get_traced_memory())
+    tracemalloc.stop()
     show_Map(Map)
     pathsort=[]
     for i in range(len(line_path)):
@@ -388,17 +390,21 @@ def gen_new_map():
         print('Path for',pathsort[i][0],':',line_path[pathsort[i][1]])
     allBiBFSPath = realLinePath
     timeBiBFS = end_time-start_time
-    memBiBFS = end_mem-start_mem
     print("Searched time used {} milliseconds".format(timeBiBFS))
-    print("Searched memory used {:,} bytes".format(memBiBFS)) 
-
-
+    print("Searched memory current used {:,} bytes, peak memory usage {:,} bytes".format(memBiBFS[0], memBiBFS[1])) 
+    
+    
     #---------------------------------------------------------------BFS---------------------------------------------------------------------------
-
-    reset_Map(Map)
-    start_time = int(round(time.time()*1000))
-    start_mem = process_memory()
+    
+    Map = [[node('-') for _ in range(mapSize)] for _ in range(mapSize)]
     line_path = []
+    search_count = 0
+ 
+    for i in range(point_count): #mark "ABCDE" in map where point exist 
+        Map[y[i]][x[i]].attr = chr(ord(Map_Marker)+(i//2))
+        
+    start_time = int(round(time.time()*1000))
+    tracemalloc.start()
     for j in range(len(perm)): #try bfs from permutation
         for k in range(len(perm[j])):
             start = perm[j][k][0]
@@ -430,7 +436,8 @@ def gen_new_map():
                     line_path.append(path_each)
             break #end when all pair connected
     end_time = int(round(time.time()*1000))
-    end_mem = process_memory()
+    memBFS  = list(tracemalloc .get_traced_memory())
+    tracemalloc.stop()
     for i in range(10): #print result
         for j in range(10):
             print(Map[i][j].attr,end=' ')
@@ -438,15 +445,15 @@ def gen_new_map():
         
     allBFSPath = []
     timeBFS = end_time-start_time
-    memBFS = end_mem-start_mem
 
     for i in range(pair_count):
-        allBFSPath.append(line_path[i])
-        print("path "+chr(65+i)+ " : "+str(line_path[i]))
+        temp_linePath = line_path[i].copy()
+        allBFSPath.append(temp_linePath)
+        print("path "+chr(65+i)+ " : "+str(temp_linePath))
         
     print("Searched {0} time".format(search_count))
     print("Searched time used {} milliseconds".format(timeBFS))
-    print("Searched memory used {:,} bytes".format(memBFS))
+    print("Searched memory current used {:,} bytes, peak memory usage {:,} bytes".format(memBFS[0], memBFS[1]))
     
     return [allBFSPath, allBiBFSPath, timeBFS, memBFS, timeBiBFS, memBiBFS]
 
@@ -568,15 +575,15 @@ while running:
     
     draw_text('Breadth First Search', (WIDTH/(gridCount*2))*gridRatio[0], 90, white, 45)
     draw_text('Searched time :', (WIDTH/(gridCount*2))*gridRatio[0]-110, HEIGHT-120, white, 30)
-    draw_text(str(timeBFS) + ' milliseconds', (WIDTH/(gridCount*2))*gridRatio[0]+110, HEIGHT-120, red, 30)
+    draw_text(str(timeBFS) + ' milliseconds', (WIDTH/(gridCount*2))*gridRatio[0]+120, HEIGHT-120, red, 30)
     draw_text('Searched memory used :', (WIDTH/(gridCount*2))*gridRatio[0]-90, HEIGHT-70, white, 30)
-    draw_text(str(memBFS) + ' bytes', (WIDTH/(gridCount*2))*gridRatio[0]+170, HEIGHT-70, red, 30)
+    draw_text(str(memBFS[0]) + ' bytes', (WIDTH/(gridCount*2))*gridRatio[0]+170, HEIGHT-70, red, 30)
     
     draw_text('Bidirectional Breadth First Search', (WIDTH/(gridCount*2))*gridRatio[1], 90, white, 45)
     draw_text('Searched time : ', (WIDTH/(gridCount*2))*gridRatio[1]-100, HEIGHT-120, white, 30)
-    draw_text(str(timeBiBFS) + ' milliseconds', (WIDTH/(gridCount*2))*gridRatio[1]+110, HEIGHT-120, red, 30)
+    draw_text(str(timeBiBFS) + ' milliseconds', (WIDTH/(gridCount*2))*gridRatio[1]+120, HEIGHT-120, red, 30)
     draw_text('Searched memory used : ', (WIDTH/(gridCount*2))*gridRatio[1]-80, HEIGHT-70, white, 30)
-    draw_text(str(memBiBFS) + ' bytes', (WIDTH/(gridCount*2))*gridRatio[1]+170, HEIGHT-70, red, 30)
+    draw_text(str(memBiBFS[0]) + ' bytes', (WIDTH/(gridCount*2))*gridRatio[1]+170, HEIGHT-70, red, 30)
     
     inrect = pygame.Rect((WIDTH/2)-80, (HEIGHT/2)-40, 160, 80)
     outrect = pygame.Rect((WIDTH/2)-74, (HEIGHT/2)-34, 148, 68)
