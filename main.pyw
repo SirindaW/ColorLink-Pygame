@@ -87,20 +87,6 @@ def bfs(Map, start, finish, way_pattern): #normal breath first search
         temp = bfs_queue.pop(0) #temp is first position in queue for search in bfs
         Map[temp[0]][temp[1]].visited = True
         
-        if temp == finish :
-            #print("found")
-            PreviousPoint = Map[temp[0]][temp[1]].prev
-            while PreviousPoint != start:
-                #print("prevend" + str(Map[PreviousPoint[1]][PreviousPoint[0]].prev))
-                Map[PreviousPoint[0]][PreviousPoint[1]].attr = line_pattern[way_pattern]
-                PreviousPoint = Map[PreviousPoint[0]][PreviousPoint[1]].prev 
-            #print("end" + str(Map[temp[1]][temp[0]].prev))
-            Map[start[0]][start[1]].visited = True
-            Map[finish[0]][finish[1]].visited = True
-            search_count += executeCount
-            #print("execcount = "+str(executeCount))
-            return 1
-        
         #if wp==2:
             #print("node"+str(temp)+" prev "+str(Map[temp[0]][temp[1]].prev)+"finish "+str(finish) +" "+ str(Map[finish[0]][finish[1]].visited))
         if temp[1] < 9: 
@@ -109,29 +95,52 @@ def bfs(Map, start, finish, way_pattern): #normal breath first search
                 if not Map[temp[0]][temp[1]+1].attr.isalpha():
                     bfs_queue.append([temp[0],temp[1]+1])
                 elif temp[0] == finish[0] and temp[1]+1 == finish[1]:
-                    bfs_queue.append([temp[0],temp[1]+1])
+                    temp = finish
+                    break
+                    # bfs_queue.append([temp[0],temp[1]+1])
         if temp[1] > 0: 
             if Map[temp[0]][temp[1]-1].visited == False: #left
                 Map[temp[0]][temp[1]-1].prev = [temp[0],temp[1]]
                 if not Map[temp[0]][temp[1]-1].attr.isalpha():
                     bfs_queue.append([temp[0],temp[1]-1])
                 elif temp[0] == finish[0] and temp[1]-1 == finish[1]:
-                    bfs_queue.append([temp[0],temp[1]-1])
+                    temp = finish
+                    break
+                    # bfs_queue.append([temp[0],temp[1]-1])
         if temp[0] > 0: 
             if Map[temp[0]-1][temp[1]].visited == False : #up
                 Map[temp[0]-1][temp[1]].prev = [temp[0],temp[1]]
                 if not Map[temp[0]-1][temp[1]].attr.isalpha():
                     bfs_queue.append([temp[0]-1,temp[1]])
                 elif temp[0]-1 == finish[0] and temp[1] == finish[1]:
-                    bfs_queue.append([temp[0]-1,temp[1]])
+                    temp = finish
+                    break
+                    # bfs_queue.append([temp[0]-1,temp[1]])
         if temp[0] < 9: 
             if Map[temp[0]+1][temp[1]].visited == False : #down
                 Map[temp[0]+1][temp[1]].prev = [temp[0],temp[1]] 
                 if not Map[temp[0]+1][temp[1]].attr.isalpha():
                     bfs_queue.append([temp[0]+1,temp[1]])
-                elif temp[0] == finish[0] and temp[1]+1 == finish[1]:
-                    bfs_queue.append([temp[0]+1,temp[1]])
+                elif temp[0]+1 == finish[0] and temp[1] == finish[1]:
+                    temp = finish
+                    break
+                    # bfs_queue.append([temp[0]+1,temp[1]])
         
+    if temp == finish :
+        #print("found")
+        
+        PreviousPoint = Map[temp[0]][temp[1]].prev
+        while PreviousPoint != start:
+            #print("prevend" + str(Map[PreviousPoint[1]][PreviousPoint[0]].prev))
+            Map[PreviousPoint[0]][PreviousPoint[1]].attr = line_pattern[way_pattern]
+            PreviousPoint = Map[PreviousPoint[0]][PreviousPoint[1]].prev 
+        #print("end" + str(Map[temp[1]][temp[0]].prev))
+        Map[start[0]][start[1]].visited = True
+        Map[finish[0]][finish[1]].visited = True
+        search_count += executeCount
+        #print("execcount = "+str(executeCount))
+        return 1
+    
     return 0
 
 def bidirect_bfs(Map, finished, retry, linePath, Target):
@@ -398,7 +407,7 @@ def gen_new_map():
             success += bfs(Map,start,finish,way_pattern)
             way_pattern += 1
             resetVisited(Map)
-        if success < targetPairCount and j!=len(perm)-1: #reset if all pair aren't connected
+        if success < targetPairCount and j != len(perm)-1: #reset if all pair aren't connected
             temp = Target.pop(0)
             Target.append(temp)
             temp = Target.pop(0)
